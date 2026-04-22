@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-5">
+    <div class="alert alert-danger">
+        <h4>Error</h4>
+        <p>{{ message }}</p>
+        <hr>
+        <p><strong>Troubleshooting tips:</strong></p>
+        <ul>
+            <li>If scanning a URL, ensure the site is accessible from your network.</li>
+            <li>Try using the <strong>file upload</strong> option with a local test file.</li>
+            <li>Check that the URL begins with <code>http://</code> or <code>https://</code>.</li>
+        </ul>
+    </div>
+    <a href="{{ url_for('main.index') }}" class="btn btn-primary">Try Again</a>
+</div>
+{% endblock %}

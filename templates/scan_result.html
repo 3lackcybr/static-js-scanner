@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4">
+    <h2>Scan Results</h2>
+    <p><strong>Source:</strong> <code>{{ source }}</code></p>
+    <div class="alert alert-info">
+        <strong>Total Vulnerabilities:</strong> {{ summary.total }}
+    </div>
+    
+    {% if summary.total == 0 %}
+        <div class="alert alert-success">✅ No vulnerabilities detected!</div>
+    {% else %}
+        {% for vuln in vulnerabilities %}
+        <div class="card mb-3 border-danger">
+            <div class="card-header bg-danger text-white">
+                <strong>{{ vuln.cwe_id }}</strong> - {{ vuln.type }}
+            </div>
+            <div class="card-body">
+                <p><strong>File:</strong> {{ vuln.file_path }}</p>
+                <p><strong>Line:</strong> {{ vuln.line_number }}</p>
+                <p><strong>Code:</strong> <pre class="bg-light p-2"><code>{{ vuln.code_snippet }}</code></pre></p>
+                <p><strong>Description:</strong> {{ vuln.description }}</p>
+                <p><strong>Remediation:</strong> {{ vuln.remediation }}</p>
+            </div>
+        </div>
+        {% endfor %}
+    {% endif %}
+    
+    <a href="{{ url_for('main.index') }}" class="btn btn-primary">New Scan</a>
+</div>
+{% endblock %}

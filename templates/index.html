@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-5">
+    <h1 class="mb-4">Static JavaScript Vulnerability Scanner</h1>
+    
+    <div class="card shadow">
+        <div class="card-body">
+            <form method="POST" enctype="multipart/form-data">
+                {{ form.hidden_tag() }}
+                
+                <div class="mb-3">
+                    {{ form.file_upload.label(class="form-label") }}
+                    {{ form.file_upload(class="form-control") }}
+                    {% if form.file_upload.errors %}
+                        <div class="text-danger">{{ form.file_upload.errors[0] }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="mb-3">
+                    {{ form.url_input.label(class="form-label") }}
+                    {{ form.url_input(class="form-control", placeholder="https://example.com/app.js") }}
+                    {% if form.url_input.errors %}
+                        <div class="text-danger">{{ form.url_input.errors[0] }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="d-grid">
+                    {{ form.submit(class="btn btn-primary btn-lg") }}
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <div class="mt-4 text-muted">
+        <small>Supported: .js, .html, .php files. Remote URLs will fetch linked JavaScript.</small>
+    </div>
+</div>
+{% endblock %}
