@@ -4,7 +4,7 @@
 [![Flask](https://img.shields.io/badge/Flask-3.0%2B-lightgrey)](https://flask.palletsprojects.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-A lightweight, web-based static analysis tool that scans JavaScript source code for common security vulnerabilities including SQL Injection, Cross-Site Scripting (XSS), Command Injection, and Hardcoded Secrets.
+A lightweight, web-based static analysis tool that scans JavaScript source code for common security vulnerabilities including SQL Injection, Cross-Site Scripting (XSS), Command Injection, Hardcoded Secrets, and Insecure `eval()` usage.
 
 ![Scanner Screenshot](screenshots/demo.png)
 
@@ -39,39 +39,48 @@ A lightweight, web-based static analysis tool that scans JavaScript source code 
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/group16/static-js-security-scanner.git
-   cd static-js-security-scanner
-   
-  2. Create and activate a virtual environment
+   git clone https://github.com/3lackcybr/static-js-scanner.git
+   cd static-js-scanner
+   ```
+
+2. **Create and activate a virtual environment**
+   ```bash
    python3 -m venv venv
-source venv/bin/activate   # On Windows: venv\Scripts\activate
+   source venv/bin/activate   # On Windows: venv\Scripts\activate
+   ```
 
-3.Install dependencies
-export PIP_BREAK_SYSTEM_PACKAGES=1   # Only needed on Kali Linux
-pip install -r requirements.txt
+3. **Install dependencies**
+   ```bash
+   export PIP_BREAK_SYSTEM_PACKAGES=1   # Only needed on Kali Linux
+   pip install -r requirements.txt
+   ```
 
-4.Run the application
-python app.py
+4. **Run the application**
+   ```bash
+   python app.py
+   ```
 
-5.Open your browser to http://127.0.0.1:5000
+5. **Open your browser**
+   
+   Navigate to `http://127.0.0.1:5000`
 
-Usage
-Scan a Local File
+## Usage
 
-    1.Click "Browse..." and select a .js, .html, or .php file.
+### Scan a Local File
 
-    2.Click "Scan Now".
+1. Click "Browse..." and select a `.js`, `.html`, or `.php` file.
+2. Click "Scan Now".
 
-Scan a Remote URL
+### Scan a Remote URL
 
-    1.Enter a URL (e.g., a raw GitHub JavaScript file) in the "Or Enter URL" field.
-
-    2.Click "Scan Now".
+1. Enter a URL (e.g., a raw GitHub JavaScript file) in the "Or Enter URL" field.
+2. Click "Scan Now".
 
 The scanner will display a report listing any vulnerabilities found, along with line numbers, CWE IDs, and remediation suggestions.
 
-Project Structure
+## Project Structure
 
+```
 static-js-scanner/
 ├── app.py                 # Flask application entry point
 ├── requirements.txt       # Python dependencies
@@ -100,50 +109,43 @@ static-js-scanner/
 ├── static/                # CSS and JavaScript assets
 ├── data/                  # CWE database (JSON)
 └── tests/                 # Unit tests
+```
 
-Contributing
+## Testing
+
+Run the test suite with:
+
+```bash
+pytest tests/
+```
+
+## Contributing
 
 Contributions are welcome! Please follow these steps:
 
-    1.Fork the repository.
-
-    2.Create a new branch: git checkout -b feature/your-feature-name.
-
-    3.Make your changes and commit them: git commit -m 'Add some feature'.
-
-    4.Push to the branch: git push origin feature/your-feature-name.
-
-   5.Open a Pull Request.
+1. Fork the repository.
+2. Create a new branch: `git checkout -b feature/your-feature-name`
+3. Make your changes and commit them: `git commit -m 'Add some feature'`
+4. Push to the branch: `git push origin feature/your-feature-name`
+5. Open a Pull Request.
 
 Please ensure your code follows the existing style and includes appropriate tests.
 
-Testing
+## License
 
-Run the test suite with:
-pytest tests/
+This project is licensed under the MIT License – see the [LICENSE](LICENSE) file for details.
 
-License
+## Authors
 
-This project is licensed under the MIT License – see the LICENSE file for details.
+- Brian Kilawe
+- Kenneth Maina
+- Radhia Kijida
+- Princess Michael
+- Walter Arobogast
 
-Authors
+**University of Dodoma – Final Year Project 2025/2026**
 
-    .Brian Kilawe – GitHub
+## Acknowledgments
 
-    .Kenneth Maina – GitHub
-
-    .Radhia Kijida – GitHub
-
-    .Princess Michael – GitHub
-
-    .Walter Arobogast – GitHub
-
-*University of Dodoma – Final Year Project 2025/2026*
-
-Acknowledgments
-
-    .OWASP Top 10 and CWE for vulnerability classification.
-
-   . Supervisor: Mr. Bakii
-    
-   
+- OWASP Top 10 and CWE for vulnerability classification.
+- Supervisor: Mr. Bakii
