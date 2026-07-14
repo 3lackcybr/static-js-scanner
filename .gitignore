@@ -1,0 +1,29 @@
+# Virtual environment
+venv/
+env/
+.env
+
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Uploaded files (may contain sensitive test data)
+uploads/
+reports/
+
+# IDE settings
+.vscode/
+.idea/
+
+# Flask session files
+flask_session/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Secrets / API keys
+*.key
+*.pem
+.env.local
