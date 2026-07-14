@@ -23,9 +23,8 @@ flask_session/
 .DS_Store
 Thumbs.db
 
-# Node.js (legacy Acorn parser)
+# Node.js dependencies
 scanner/node_modules/
-scanner/package-lock.json
 
 # Secrets / API keys
 *.key

@@ -1,0 +1,7 @@
+{
+  "name": "scanner",
+  "private": true,
+  "dependencies": {
+    "acorn": "^8.16.0"
+  }
+}
