@@ -135,17 +135,6 @@ Please ensure your code follows the existing style and includes appropriate test
 
 This project is licensed under the MIT License – see the [LICENSE](LICENSE) file for details.
 
-## Authors
-
-- Brian Kilawe
-- Kenneth Maina
-- Radhia Kijida
-- Princess Michael
-- Walter Arobogast
-
-**University of Dodoma – Final Year Project 2025/2026**
-
 ## Acknowledgments
 
 - OWASP Top 10 and CWE for vulnerability classification.
-- Supervisor: Mr. Bakii
