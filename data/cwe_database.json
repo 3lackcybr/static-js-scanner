@@ -18,5 +18,10 @@
         "cwe_id": "CWE-798",
         "description": "Hardcoded Credentials: API keys, passwords, or tokens found in source code.",
         "remediation": "Use environment variables or a secure secret management service. Never commit secrets to version control."
+    },
+    "eval_injection": {
+        "cwe_id": "CWE-95",
+        "description": "Insecure use of eval() with dynamic input.",
+        "remediation": "Avoid eval(). Use safer alternatives like JSON.parse() or a dedicated parser."
     }
 }

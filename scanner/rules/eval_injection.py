@@ -1,4 +1,4 @@
- # scanner/rules/command_injection.py
+ # scanner/rules/eval_injection.py
 from scanner.rules.base_rule import VulnerabilityRule
 from scanner.vulnerability import Vulnerability
 
@@ -10,19 +10,13 @@ USER_INPUT_SOURCES = {
     'request.url', 'request.args', 'request.json',
 }
 
-CMD_SANITIZERS = {
-    'escapeShellArg', 'shellescape', 'quote', 'escape',
-    'sanitizeCommand', 'escapeCommand', 'shellQuote'
-}
-
-class CommandInjectionRule(VulnerabilityRule):
+class EvalInjectionRule(VulnerabilityRule):
     def __init__(self):
         super().__init__(
-            vuln_type="Command Injection",
-            cwe_id="CWE-78",
-            description="User input passed to a dangerous command execution function."
+            vuln_type="Insecure Use of eval()",
+            cwe_id="CWE-95",
+            description="Dynamically constructed argument passed to eval()."
         )
-        self.dangerous_funcs = {'exec', 'execSync', 'spawn', 'execFile', 'system'}
 
     def detect(self, ast, file_path, code_lines, initial_tainted=None):
         vulns = []
@@ -39,7 +33,6 @@ class CommandInjectionRule(VulnerabilityRule):
         new_tainted = set(tainted_vars)
         new_depth = taint_depth
 
-        # Taint propagation
         if node_type == 'AssignmentExpression':
             left = node.get('left')
             right = node.get('right')
@@ -67,37 +60,30 @@ class CommandInjectionRule(VulnerabilityRule):
                         new_tainted.add(var_id.get('name'))
                         new_depth = taint_depth + 1
 
-        # Command execution detection
-        if node_type == 'CallExpression' and parent_type != 'ReturnStatement':
+        if node_type == 'CallExpression':
             callee = node.get('callee')
-            func_name = None
-            if callee:
-                if callee.get('type') == 'Identifier':
-                    func_name = callee.get('name')
-                elif callee.get('type') == 'MemberExpression':
-                    func_name = callee.get('property', {}).get('name')
-                if func_name in self.dangerous_funcs:
-                    args = node.get('arguments', [])
-                    if args and self._references_tainted_var(args[0], new_tainted):
-                        sanitized = self._is_sanitized_expression(args[0], new_tainted, CMD_SANITIZERS)
-                        score = 50 if sanitized else (90 if new_depth == 1 else 70)
-                        if score >= 50:
-                            line = node['loc']['start']['line']
-                            snippet = code_lines[line-1].strip() if line-1 < len(code_lines) else ''
-                            vars_used = self._extract_identifiers(args[0])
-                            var_names = ', '.join(set(vars_used)) if vars_used else 'user input'
-                            desc = f"The function '{func_name}' is called with {var_names}."
-                            remed = f"Do not pass user input to '{func_name}'. Use allowlists or safe APIs."
-                            vulns.append(Vulnerability(
-                                vuln_type=self.vuln_type,
-                                cwe_id=self.cwe_id,
-                                file_path=file_path,
-                                line_number=line,
-                                code_snippet=snippet,
-                                description=desc,
-                                remediation=remed,
-                                confidence_score=score
-                            ))
+            if callee and callee.get('type') == 'Identifier' and callee.get('name') == 'eval':
+                args = node.get('arguments', [])
+                if args and not self._is_literal_string(args[0]) and \
+                   self._references_tainted_var(args[0], new_tainted):
+                    score = 95 if new_depth == 1 else 75
+                    if score >= 50:
+                        line = node['loc']['start']['line']
+                        snippet = code_lines[line-1].strip() if line-1 < len(code_lines) else ''
+                        vars_used = self._extract_identifiers(args[0])
+                        var_names = ', '.join(set(vars_used)) if vars_used else 'a dynamic expression'
+                        desc = f"eval() called with {var_names}."
+                        remed = "Avoid eval(). Use JSON.parse() or a safe parser."
+                        vulns.append(Vulnerability(
+                            vuln_type=self.vuln_type,
+                            cwe_id=self.cwe_id,
+                            file_path=file_path,
+                            line_number=line,
+                            code_snippet=snippet,
+                            description=desc,
+                            remediation=remed,
+                            confidence_score=score
+                        ))
 
         for key, value in node.items():
             if isinstance(value, dict):
@@ -111,7 +97,10 @@ class CommandInjectionRule(VulnerabilityRule):
                     new_depth = max(new_depth, d)
         return new_tainted, new_depth
 
-    # ----- helpers (same as before) -----
+    # ----- helpers -----
+    def _is_literal_string(self, node):
+        return isinstance(node, dict) and node.get('type') == 'Literal' and isinstance(node.get('value'), str)
+
     def _is_from_user_input(self, node):
         if isinstance(node, dict):
             if node.get('type') == 'MemberExpression':
@@ -143,15 +132,6 @@ class CommandInjectionRule(VulnerabilityRule):
         elif isinstance(node, list):
             for item in node:
                 if self._references_tainted_var(item, tainted_vars):
-                    return True
-        return False
-
-    def _is_sanitized_expression(self, expr, tainted_vars, sanitizers):
-        if isinstance(expr, dict) and expr.get('type') == 'CallExpression':
-            callee = expr.get('callee')
-            if callee:
-                func_name = self._get_full_name(callee)
-                if func_name in sanitizers:
                     return True
         return False
 

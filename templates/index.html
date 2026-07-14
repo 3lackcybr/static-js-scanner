@@ -1,38 +1,79 @@
-{% extends "base.html" %}
+ {% extends "base.html" %}
 {% block content %}
-<div class="container mt-5">
-    <h1 class="mb-4">Static JavaScript Vulnerability Scanner</h1>
-    
-    <div class="card shadow">
-        <div class="card-body">
-            <form method="POST" enctype="multipart/form-data">
-                {{ form.hidden_tag() }}
-                
-                <div class="mb-3">
-                    {{ form.file_upload.label(class="form-label") }}
-                    {{ form.file_upload(class="form-control") }}
-                    {% if form.file_upload.errors %}
-                        <div class="text-danger">{{ form.file_upload.errors[0] }}</div>
-                    {% endif %}
-                </div>
-                
-                <div class="mb-3">
-                    {{ form.url_input.label(class="form-label") }}
-                    {{ form.url_input(class="form-control", placeholder="https://example.com/app.js") }}
-                    {% if form.url_input.errors %}
-                        <div class="text-danger">{{ form.url_input.errors[0] }}</div>
-                    {% endif %}
-                </div>
-                
-                <div class="d-grid">
-                    {{ form.submit(class="btn btn-primary btn-lg") }}
-                </div>
-            </form>
+<div class="card">
+    <div class="typing-container">
+        <span class="typing-text" id="typingText"></span>
+    </div>
+    <p style="color: #8892b0; margin-bottom: 2rem;">
+        Upload a file, enter a URL, or provide a local folder path to scan for vulnerabilities.
+    </p>
+
+    <form method="POST" enctype="multipart/form-data">
+        {{ form.hidden_tag() }}
+        
+        <div class="mb-4">
+            <label class="form-label">📁 Upload File</label>
+            {{ form.file_upload(class="form-control") }}
+            <div class="form-text">Supports .js, .html, .php, .txt files.</div>
         </div>
-    </div>
-    
-    <div class="mt-4 text-muted">
-        <small>Supported: .js, .html, .php files. Remote URLs will fetch linked JavaScript.</small>
-    </div>
+        
+        <div class="mb-4">
+            <label class="form-label">🌐 Or Enter URL</label>
+            {{ form.url_input(class="form-control", placeholder="https://example.com/page.html") }}
+            <div class="form-text">Remote URLs will fetch linked JavaScript.</div>
+        </div>
+        
+        <div class="mb-4">
+            <label class="form-label">📂 Or Enter Folder Path</label>
+            {{ form.folder_path(class="form-control", placeholder="/home/user/project/js") }}
+            <div class="form-text">Scan all .js, .html, .php, .txt files inside a local folder.</div>
+        </div>
+        
+        {{ form.submit(class="btn btn-primary") }}
+    </form>
 </div>
+
+<script>
+    // Typing animation (unchanged)
+    const phrases = [
+        "Scan JavaScript for Vulnerabilities",
+        "Find SQL Injection, XSS, Command Injection...",
+        "Detect Hardcoded Secrets & Insecure eval()",
+        "Protect Your Code Early in Development"
+    ];
+    let phraseIndex = 0;
+    let charIndex = 0;
+    let currentPhrase = '';
+    let isDeleting = false;
+    const speed = 100;
+
+    function typeEffect() {
+        const el = document.getElementById('typingText');
+        if (!el) return;
+        if (phraseIndex >= phrases.length) phraseIndex = 0;
+        const full = phrases[phraseIndex];
+
+        if (isDeleting) {
+            currentPhrase = full.substring(0, charIndex - 1);
+            charIndex--;
+        } else {
+            currentPhrase = full.substring(0, charIndex + 1);
+            charIndex++;
+        }
+
+        el.textContent = currentPhrase;
+
+        if (!isDeleting && charIndex === full.length) {
+            setTimeout(() => { isDeleting = true; typeEffect(); }, 2000);
+            return;
+        } else if (isDeleting && charIndex === 0) {
+            isDeleting = false;
+            phraseIndex++;
+            setTimeout(typeEffect, 500);
+            return;
+        }
+        setTimeout(typeEffect, isDeleting ? 50 : speed);
+    }
+    typeEffect();
+</script>
 {% endblock %}

@@ -3,31 +3,103 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JS Vulnerability Scanner</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <title>🔒 Static JS Security Scanner</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
-    <nav class="navbar navbar-dark bg-dark">
-        <div class="container">
-            <span class="navbar-brand">🔒 Static JS Security Scanner</span>
+    <!-- Side carousel with group members -->
+    <div class="side-carousel" id="sideCarousel">
+        <h4>⚡ Group 16</h4>
+        <div class="carousel-slides">
+            <div class="carousel-slide active">
+                <div style="width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,#00f0ff,#0066ff);display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:1.5rem;margin:0 auto 0.5rem;">BK</div>
+                <div class="member-name">Brian Kilawe</div>
+                <div class="member-role">T22-03-12950</div>
+            </div>
+            <div class="carousel-slide">
+                <div style="width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,#ff4757,#ff6b81);display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:1.5rem;margin:0 auto 0.5rem;">KM</div>
+                <div class="member-name">Kenneth Maina</div>
+                <div class="member-role">T22-03-15010</div>
+            </div>
+            <div class="carousel-slide">
+                <div style="width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,#2ed573,#7bed9f);display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:1.5rem;margin:0 auto 0.5rem;">RK</div>
+                <div class="member-name">Radhia Kijida</div>
+                <div class="member-role">T22-03-12951</div>
+            </div>
+            <div class="carousel-slide">
+                <div style="width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,#ffa502,#ff6348);display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:1.5rem;margin:0 auto 0.5rem;">PM</div>
+                <div class="member-name">Princess Michael</div>
+                <div class="member-role">T22-03-08079</div>
+            </div>
+            <div class="carousel-slide">
+                <div style="width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,#3742fa,#3742fa);display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:1.5rem;margin:0 auto 0.5rem;">WA</div>
+                <div class="member-name">Walter Aborogast</div>
+                <div class="member-role">T22-03-09382</div>
+            </div>
+        </div>
+    </div>
+
+    <nav class="navbar">
+        <a href="/" class="navbar-brand">
+            <div class="logo-icon"></div>
+            Static JS Security Scanner
+        </a>
+        <div class="navbar-links">
+            <a href="/" class="nav-link">Home</a>
+            <a href="#" class="nav-link">Documentation</a>
+            <a href="#" class="nav-link">About</a>
         </div>
     </nav>
-    
-    <main>
+
+    <!-- Scanning overlay -->
+    <div id="scanningOverlay" class="scanning-overlay">
+        <div class="scanner-loader"></div>
+    </div>
+
+    <div class="main-container">
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
+                <div style="position: absolute; top: 80px; width: 100%;">
                 {% for category, message in messages %}
-                    <div class="alert alert-{{ category }} alert-dismissible fade show m-3" role="alert">
-                        {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    </div>
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
                 {% endfor %}
+                </div>
             {% endif %}
         {% endwith %}
         
         {% block content %}{% endblock %}
-    </main>
-    
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    </div>
+
+    <footer class="footer">
+        © 2026 Static JS Security Scanner | University of Dodoma | Group 16
+    </footer>
+
+    <script>
+        // Carousel auto‑rotate
+        (function() {
+            const slides = document.querySelectorAll('.carousel-slide');
+            let current = 0;
+            function showSlide(index) {
+                slides.forEach((s, i) => s.classList.toggle('active', i === index));
+            }
+            setInterval(() => {
+                current = (current + 1) % slides.length;
+                showSlide(current);
+            }, 3000);
+        })();
+
+        // Scanning overlay
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.querySelector('form');
+            if (form) {
+                form.addEventListener('submit', function() {
+                    document.getElementById('scanningOverlay').style.display = 'flex';
+                });
+            }
+            window.addEventListener('pageshow', function() {
+                document.getElementById('scanningOverlay').style.display = 'none';
+            });
+        });
+    </script>
 </body>
 </html>

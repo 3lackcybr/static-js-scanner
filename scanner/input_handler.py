@@ -1,4 +1,4 @@
-# scanner/input_handler.py
+ # scanner/input_handler.py
 import os
 from .web_fetcher import WebFetcher
 
@@ -8,20 +8,32 @@ class InputHandler:
     
     def accept_input(self, source):
         """
-        Determine if source is a file path or URL.
-        Returns: (content, source_type, base_url_or_path)
+        Accepts a file path, URL, or directory path.
+        Returns a dict with 'html' (content) and 'external_js' for files/URLs,
+        or None if the source is a directory (to be handled separately).
         """
         if source.startswith(('http://', 'https://')):
-            # It's a URL
-            content = self.web_fetcher.fetch(source)
-            # Also download linked JS files and append their content
-            linked_js = self.web_fetcher.download_linked_js(content, source)
-            combined_js = content + "\n" + "\n".join(linked_js)
-            return combined_js
-        elif os.path.exists(source):
-            # It's a local file
+            html_content = self.web_fetcher.fetch(source)
+            external_js = self.web_fetcher.download_linked_js(html_content, source)
+            return {'html': html_content, 'external_js': external_js}
+        elif os.path.isdir(source):
+            return None   # signal that this is a folder
+        elif os.path.isfile(source):
             with open(source, 'r', encoding='utf-8') as f:
                 content = f.read()
-            return content
+            return {'html': content, 'external_js': []}
         else:
             raise ValueError(f"Invalid source: {source}")
+    
+    def get_files_from_folder(self, folder_path):
+        """
+        Recursively returns a list of file paths for all supported files
+        in the given folder.
+        """
+        supported_ext = ('.js', '.html', '.php', '.txt')
+        files = []
+        for root, dirs, filenames in os.walk(folder_path):
+            for f in filenames:
+                if f.lower().endswith(supported_ext):
+                    files.append(os.path.join(root, f))
+        return files

@@ -1,4 +1,4 @@
- # scanner/rules/command_injection.py
+# scanner/rules/angular_bypass.py
 from scanner.rules.base_rule import VulnerabilityRule
 from scanner.vulnerability import Vulnerability
 
@@ -10,25 +10,22 @@ USER_INPUT_SOURCES = {
     'request.url', 'request.args', 'request.json',
 }
 
-CMD_SANITIZERS = {
-    'escapeShellArg', 'shellescape', 'quote', 'escape',
-    'sanitizeCommand', 'escapeCommand', 'shellQuote'
-}
-
-class CommandInjectionRule(VulnerabilityRule):
+class AngularBypassRule(VulnerabilityRule):
     def __init__(self):
         super().__init__(
-            vuln_type="Command Injection",
-            cwe_id="CWE-78",
-            description="User input passed to a dangerous command execution function."
+            vuln_type="Angular Security Bypass",
+            cwe_id="CWE-79",
+            description="Angular DomSanitizer bypass method used with user input."
         )
-        self.dangerous_funcs = {'exec', 'execSync', 'spawn', 'execFile', 'system'}
+        self.bypass_methods = {
+            'bypassSecurityTrustHtml', 'bypassSecurityTrustScript',
+            'bypassSecurityTrustStyle', 'bypassSecurityTrustUrl',
+            'bypassSecurityTrustResourceUrl'
+        }
 
-    def detect(self, ast, file_path, code_lines, initial_tainted=None):
+    def detect(self, ast, file_path, code_lines):
         vulns = []
-        taint_start = initial_tainted if initial_tainted else set()
-        self._walk(ast, file_path, code_lines, vulns, parent_type=None,
-                   tainted_vars=taint_start, taint_depth=0)
+        self._walk(ast, file_path, code_lines, vulns, parent_type=None, tainted_vars=set(), taint_depth=0)
         return vulns
 
     def _walk(self, node, file_path, code_lines, vulns, parent_type, tainted_vars, taint_depth):
@@ -39,7 +36,7 @@ class CommandInjectionRule(VulnerabilityRule):
         new_tainted = set(tainted_vars)
         new_depth = taint_depth
 
-        # Taint propagation
+        # Taint propagation (same as other rules)
         if node_type == 'AssignmentExpression':
             left = node.get('left')
             right = node.get('right')
@@ -67,27 +64,23 @@ class CommandInjectionRule(VulnerabilityRule):
                         new_tainted.add(var_id.get('name'))
                         new_depth = taint_depth + 1
 
-        # Command execution detection
-        if node_type == 'CallExpression' and parent_type != 'ReturnStatement':
+        # Check for bypass method calls
+        if node_type == 'CallExpression':
             callee = node.get('callee')
-            func_name = None
-            if callee:
-                if callee.get('type') == 'Identifier':
-                    func_name = callee.get('name')
-                elif callee.get('type') == 'MemberExpression':
-                    func_name = callee.get('property', {}).get('name')
-                if func_name in self.dangerous_funcs:
-                    args = node.get('arguments', [])
-                    if args and self._references_tainted_var(args[0], new_tainted):
-                        sanitized = self._is_sanitized_expression(args[0], new_tainted, CMD_SANITIZERS)
-                        score = 50 if sanitized else (90 if new_depth == 1 else 70)
-                        if score >= 50:
+            if callee and callee.get('type') == 'MemberExpression':
+                obj = callee.get('object')
+                prop = callee.get('property')
+                if obj and prop:
+                    # Could be this.sanitizer.bypassSecurityTrustHtml() or just bypassSecurityTrustHtml()
+                    method_name = prop.get('name', '')
+                    if method_name in self.bypass_methods:
+                        args = node.get('arguments', [])
+                        if args and self._references_tainted_var(args[0], new_tainted):
                             line = node['loc']['start']['line']
                             snippet = code_lines[line-1].strip() if line-1 < len(code_lines) else ''
-                            vars_used = self._extract_identifiers(args[0])
-                            var_names = ', '.join(set(vars_used)) if vars_used else 'user input'
-                            desc = f"The function '{func_name}' is called with {var_names}."
-                            remed = f"Do not pass user input to '{func_name}'. Use allowlists or safe APIs."
+                            score = 95 if new_depth == 1 else 75
+                            desc = f"Angular DomSanitizer.{method_name}() called with user input."
+                            remed = "Avoid bypassing Angular's sanitization with untrusted data. Use Angular's built-in sanitization or safe APIs."
                             vulns.append(Vulnerability(
                                 vuln_type=self.vuln_type,
                                 cwe_id=self.cwe_id,
@@ -111,7 +104,7 @@ class CommandInjectionRule(VulnerabilityRule):
                     new_depth = max(new_depth, d)
         return new_tainted, new_depth
 
-    # ----- helpers (same as before) -----
+    # --- Helper methods (same as other rules) ---
     def _is_from_user_input(self, node):
         if isinstance(node, dict):
             if node.get('type') == 'MemberExpression':
@@ -145,27 +138,6 @@ class CommandInjectionRule(VulnerabilityRule):
                 if self._references_tainted_var(item, tainted_vars):
                     return True
         return False
-
-    def _is_sanitized_expression(self, expr, tainted_vars, sanitizers):
-        if isinstance(expr, dict) and expr.get('type') == 'CallExpression':
-            callee = expr.get('callee')
-            if callee:
-                func_name = self._get_full_name(callee)
-                if func_name in sanitizers:
-                    return True
-        return False
-
-    def _extract_identifiers(self, node):
-        names = []
-        if isinstance(node, dict):
-            if node.get('type') == 'Identifier':
-                names.append(node.get('name', ''))
-            for value in node.values():
-                names.extend(self._extract_identifiers(value))
-        elif isinstance(node, list):
-            for item in node:
-                names.extend(self._extract_identifiers(item))
-        return names
 
     def _get_name(self, node):
         if isinstance(node, dict) and node.get('type') == 'Identifier':

@@ -1,12 +1,9 @@
-# scanner/parser.py
-import pyjsparser
+import esprima
 
 class Parser:
-    """Parses JavaScript code into an Abstract Syntax Tree (AST)."""
-    
     def parse_to_ast(self, js_code):
-        """Convert JavaScript string to AST using pyjsparser."""
         try:
-            return pyjsparser.parse(js_code)
+            ast = esprima.parseScript(js_code, loc=True)
+            return ast.toDict()
         except Exception as e:
-            raise SyntaxError(f"JavaScript syntax error: {e}")
+            raise SyntaxError(str(e))

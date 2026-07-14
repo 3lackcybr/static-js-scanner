@@ -1,8 +1,7 @@
 # scanner/web_fetcher.py
 import requests
-from urllib.parse import urljoin, urlparse
+from urllib.parse import urljoin
 import re
-import time
 
 class WebFetcher:
     """Fetches HTML content from URLs and downloads linked JavaScript files."""
@@ -15,58 +14,54 @@ class WebFetcher:
             'User-Agent': 'Mozilla/5.0 (compatible; StaticSecurityScanner/1.0)'
         })
     
-    def _request_with_retry(self, url):
-        """Perform GET request with retry logic."""
-        last_exception = None
-        for attempt in range(self.max_retries + 1):
-            try:
-                response = self.session.get(url, timeout=self.timeout)
-                response.raise_for_status()
-                return response
-            except requests.exceptions.Timeout as e:
-                last_exception = e
-                if attempt < self.max_retries:
-                    time.sleep(2 ** attempt)  # Exponential backoff: 1s, 2s, 4s
-            except requests.exceptions.ConnectionError as e:
-                last_exception = e
-                if attempt < self.max_retries:
-                    time.sleep(2 ** attempt)
-            except requests.exceptions.HTTPError as e:
-                # Don't retry on 404 or other client errors
-                raise ConnectionError(f"HTTP error {e.response.status_code}: {url}")
-            except requests.exceptions.RequestException as e:
-                last_exception = e
-                break
-        raise ConnectionError(f"Failed to fetch '{url}' after {self.max_retries+1} attempts: {last_exception}")
-    
     def fetch(self, url):
         """Fetch HTML content from a URL."""
-        response = self._request_with_retry(url)
-        return response.text
+        try:
+            response = self.session.get(url, timeout=self.timeout)
+            response.raise_for_status()
+            return response.text
+        except requests.exceptions.HTTPError as e:
+            if e.response.status_code == 404:
+                raise ConnectionError(f"URL not found (404): {url}")
+            else:
+                raise ConnectionError(f"HTTP error {e.response.status_code} for URL: {url}")
+        except requests.exceptions.RequestException as e:
+            raise ConnectionError(f"Failed to fetch URL '{url}': {e}")
     
     def fetch_js(self, url):
-        """Fetch JavaScript file content directly from a URL."""
-        response = self._request_with_retry(url)
-        return response.text
+        """Fetch JavaScript file content directly."""
+        try:
+            response = self.session.get(url, timeout=self.timeout)
+            response.raise_for_status()
+            return response.text
+        except requests.exceptions.RequestException as e:
+            raise ConnectionError(f"Failed to fetch JavaScript from '{url}': {e}")
     
     def download_linked_js(self, html_content, base_url):
-        """Extract and download all linked .js files from HTML."""
-        script_urls = self._extract_script_srcs(html_content, base_url)
-        js_contents = []
-        for js_url in script_urls:
+        """
+        Extracts <script src='...'> URLs and downloads each .js file.
+        Returns a list of (url, content, html_line_number) tuples.
+        """
+        script_entries = self._extract_script_srcs(html_content, base_url)
+        js_files = []
+        for js_url, line_num in script_entries:
             try:
                 js_content = self.fetch_js(js_url)
-                js_contents.append(js_content)
+                js_files.append((js_url, js_content, line_num))
             except ConnectionError:
                 continue
-        return js_contents
+        return js_files
     
     def _extract_script_srcs(self, html_content, base_url):
-        """Extract src attributes from <script> tags."""
-        pattern = r'<script[^>]+src=["\']([^"\']+\.js)["\'][^>]*>'
-        matches = re.findall(pattern, html_content, re.IGNORECASE)
-        urls = []
-        for match in matches:
-            full_url = urljoin(base_url, match)
-            urls.append(full_url)
-        return urls
+        """
+        Finds all <script src="..."> tags and returns a list of (absolute_url, html_line_number).
+        """
+        lines = html_content.split('\n')
+        entries = []
+        # Find tags line by line to capture line numbers
+        for i, line in enumerate(lines, start=1):
+            matches = re.findall(r'<script[^>]+src=["\']([^"\']+\.js)["\']', line, re.IGNORECASE)
+            for match in matches:
+                full_url = urljoin(base_url, match)
+                entries.append((full_url, i))
+        return entries

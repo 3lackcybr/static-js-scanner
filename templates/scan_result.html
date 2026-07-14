@@ -1,31 +1,84 @@
-{% extends "base.html" %}
+ {% extends "base.html" %}
 {% block content %}
-<div class="container mt-4">
-    <h2>Scan Results</h2>
-    <p><strong>Source:</strong> <code>{{ source }}</code></p>
+<div class="card" style="max-width: 900px;">
+    <h1>Scan Results</h1>
+    <p class="file-path">📄 Source: {{ source }}</p>
+
     <div class="alert alert-info">
-        <strong>Total Vulnerabilities:</strong> {{ summary.total }}
+        ⚡ Total Vulnerabilities: <strong>{{ summary.total }}</strong>
     </div>
-    
-    {% if summary.total == 0 %}
-        <div class="alert alert-success">✅ No vulnerabilities detected!</div>
-    {% else %}
+
+    <!-- Skipped files (folder scan only) -->
+    {% if skipped_files %}
+    <div class="alert alert-warning">
+        <strong>⚠️ The following files contained no JavaScript and were skipped:</strong>
+        <ul style="margin-bottom: 0;">
+            {% for f in skipped_files %}
+                <li><code>{{ f }}</code></li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    {% if summary.total == 0 and not skipped_files %}
+        <div class="alert alert-success">
+            ✅ No vulnerabilities detected. Your JavaScript looks secure!
+        </div>
+    {% endif %}
+
+    {% if vulnerabilities %}
+        {# Group vulnerabilities by file_path #}
+        {% set grouped = {} %}
         {% for vuln in vulnerabilities %}
-        <div class="card mb-3 border-danger">
-            <div class="card-header bg-danger text-white">
-                <strong>{{ vuln.cwe_id }}</strong> - {{ vuln.type }}
+            {% if vuln.file_path not in grouped %}
+                {% set _ = grouped.update({vuln.file_path: []}) %}
+            {% endif %}
+            {% set _ = grouped[vuln.file_path].append(vuln) %}
+        {% endfor %}
+
+        {% for file_path, vulns_list in grouped.items() %}
+        <div class="vuln-card">
+            <div class="vuln-header">
+                📁 <span class="file-path">{{ file_path }}</span>
+                <span class="badge">{{ vulns_list|length }} issue(s)</span>
             </div>
-            <div class="card-body">
-                <p><strong>File:</strong> {{ vuln.file_path }}</p>
-                <p><strong>Line:</strong> {{ vuln.line_number }}</p>
-                <p><strong>Code:</strong> <pre class="bg-light p-2"><code>{{ vuln.code_snippet }}</code></pre></p>
-                <p><strong>Description:</strong> {{ vuln.description }}</p>
-                <p><strong>Remediation:</strong> {{ vuln.remediation }}</p>
+            <div class="vuln-body">
+                {% for vuln in vulns_list %}
+                <div class="mb-4">
+                    <h5 style="display: flex; align-items: center; gap: 0.5rem;">
+                        {% if vuln.type == 'Obfuscation Warning' %}
+                          <span class="badge bg-warning text-dark">⚠️ OBFUSCATION</span>
+                        {% else %}
+                          <span class="badge bg-danger">{{ vuln.cwe_id }}</span>
+                        {% endif %}
+                        {{ vuln.type }}
+                    </h5>
+                    <ul style="list-style: none; padding: 0; margin-top: 0.75rem;">
+                        <li>🔹 <strong>Line (inside file):</strong> {{ vuln.line_number }}</li>
+                        <li>🔹 <strong>Code:</strong>
+                            <div class="code-block">{{ vuln.code_snippet[:200] }}{% if vuln.code_snippet|length > 200 %}...{% endif %}</div>
+                        </li>
+                        <li>🔹 <strong>Description:</strong> {{ vuln.description }}</li>
+                        <li>🔹 <strong>Remediation:</strong> {{ vuln.remediation }}</li>
+                        <li>🔹 <strong>Confidence:</strong>
+                            {% if vuln.confidence_score >= 80 %}
+                                <span class="badge bg-danger">{{ vuln.confidence_score }}% (Vulnerability)</span>
+                            {% elif vuln.confidence_score >= 50 %}
+                                <span class="badge bg-warning text-dark">{{ vuln.confidence_score }}% (Warning)</span>
+                            {% else %}
+                                <span class="badge bg-secondary">{{ vuln.confidence_score }}% (Info)</span>
+                            {% endif %}
+                        </li>
+                    </ul>
+                </div>
+                {% endfor %}
             </div>
         </div>
         {% endfor %}
     {% endif %}
-    
-    <a href="{{ url_for('main.index') }}" class="btn btn-primary">New Scan</a>
+
+    <div class="mt-4 text-center">
+        <a href="{{ url_for('main.index') }}" class="btn btn-outline">← New Scan</a>
+    </div>
 </div>
 {% endblock %}
