@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'motion/react';
 import {
   AlertOctagon,
@@ -18,6 +18,7 @@ import {
   Upload,
   X,
 } from 'lucide-react';
+import { filterVulnerabilities } from '@/lib/findingsFilter';
 import {
   clearScanHistory,
   deleteScanReport,
@@ -25,9 +26,10 @@ import {
   saveScanReport,
   type StoredScanReport,
 } from '@/lib/scanHistoryDb';
-import type { CweInfo, ScanProgressEvent, ScanResult } from '@/scanner/types';
+import type { CweInfo, ScanProgressEvent, ScanResult, Severity } from '@/scanner/types';
 import HelpDocumentationModal from './HelpDocumentationModal';
 import QuickActionsPanel from './QuickActionsPanel';
+import ResultsSearchBar from './ResultsSearchBar';
 import ScanHistoryPanel from './ScanHistoryPanel';
 import ScanProgressBar from './ScanProgressBar';
 import ScanResultView from './ScanResultView';
@@ -94,6 +96,19 @@ export default function ScannerClient({ cweEntries }: ScannerClientProps) {
   const [showScanHistory, setShowScanHistory] = useState(true);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [helpDocsOpen, setHelpDocsOpen] = useState(false);
+  const [resultSearchQuery, setResultSearchQuery] = useState('');
+  const [selectedSeverities, setSelectedSeverities] = useState<Severity[]>([]);
+
+  const filteredResultVulnerabilities = useMemo(() => {
+    if (!result) return [];
+    return filterVulnerabilities(result.vulnerabilities, selectedSeverities, resultSearchQuery);
+  }, [result, selectedSeverities, resultSearchQuery]);
+
+  const handleToggleSeverity = (level: Severity) => {
+    setSelectedSeverities((prev) =>
+      prev.includes(level) ? prev.filter((item) => item !== level) : [...prev, level]
+    );
+  };
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -138,6 +153,8 @@ export default function ScannerClient({ cweEntries }: ScannerClientProps) {
       label: 'Scan complete.',
       percent: 100,
     });
+    setSelectedSeverities([]);
+    setResultSearchQuery('');
     setResult(payload);
 
     try {
@@ -386,6 +403,8 @@ export default function ScannerClient({ cweEntries }: ScannerClientProps) {
   const handleReset = () => {
     setResult(null);
     setActiveReportId(null);
+    setSelectedSeverities([]);
+    setResultSearchQuery('');
     setError(null);
     setScanProgress(null);
     setSelectedFile(null);
@@ -398,6 +417,8 @@ export default function ScannerClient({ cweEntries }: ScannerClientProps) {
   const handleRecallReport = (entry: StoredScanReport) => {
     setResult(entry.result);
     setActiveReportId(entry.id);
+    setSelectedSeverities([]);
+    setResultSearchQuery('');
     setError(null);
     setMobileSidebarOpen(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -528,7 +549,27 @@ export default function ScannerClient({ cweEntries }: ScannerClientProps) {
           {/* Primary Workspace Column */}
           <div className="flex-1 min-w-0 w-full space-y-12">
             {result ? (
-              <ScanResultView result={result} onReset={handleReset} />
+              <div className="space-y-6">
+                <ResultsSearchBar
+                  query={resultSearchQuery}
+                  onQueryChange={setResultSearchQuery}
+                  vulnerabilities={result.vulnerabilities}
+                  matchCount={filteredResultVulnerabilities.length}
+                />
+                <ScanResultView
+                  result={result}
+                  filteredVulnerabilities={filteredResultVulnerabilities}
+                  selectedSeverities={selectedSeverities}
+                  searchQuery={resultSearchQuery}
+                  onToggleSeverity={handleToggleSeverity}
+                  onSelectAllSeverities={() => setSelectedSeverities([])}
+                  onResetFilters={() => {
+                    setSelectedSeverities([]);
+                    setResultSearchQuery('');
+                  }}
+                  onReset={handleReset}
+                />
+              </div>
             ) : (
               <>
                 {/* Authoritative Editorial Header */}
@@ -842,12 +883,12 @@ export default function ScannerClient({ cweEntries }: ScannerClientProps) {
                                   </span>
                                   <span aria-hidden="true">&middot;</span>
                                   {entry.severity === 'Critical' ? (
-                                    <span className="inline-flex items-center gap-1 text-red-400 font-medium">
+                                    <span className="inline-flex items-center gap-1 text-purple-400 font-medium">
                                       <AlertOctagon className="w-3 h-3" aria-hidden="true" />
                                       <span>Critical</span>
                                     </span>
                                   ) : (
-                                    <span className="inline-flex items-center gap-1 text-amber-400 font-medium">
+                                    <span className="inline-flex items-center gap-1 text-red-400 font-medium">
                                       <AlertTriangle className="w-3 h-3" aria-hidden="true" />
                                       <span>High</span>
                                     </span>

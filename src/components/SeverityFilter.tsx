@@ -1,6 +1,7 @@
 'use client';
 
 import { AlertOctagon, AlertTriangle, Info, ShieldAlert } from 'lucide-react';
+import { SEVERITY_ORDER, getSeverityStyle } from '@/lib/severityStyles';
 import type { ScanSummary, Severity } from '@/scanner/types';
 
 interface SeverityFilterProps {
@@ -10,32 +11,14 @@ interface SeverityFilterProps {
   onSelectAll: () => void;
 }
 
-const SEVERITY_OPTIONS: Array<{
-  level: Severity;
-  activeClass: string;
-  iconClass: string;
-}> = [
-  {
-    level: 'Critical',
-    activeClass: 'bg-red-950/50 text-red-300 border-red-500/40',
-    iconClass: 'text-red-400',
-  },
-  {
-    level: 'High',
-    activeClass: 'bg-amber-950/50 text-amber-300 border-amber-500/40',
-    iconClass: 'text-amber-400',
-  },
-  {
-    level: 'Medium',
-    activeClass: 'bg-sky-950/50 text-sky-300 border-sky-500/40',
-    iconClass: 'text-sky-400',
-  },
-  {
-    level: 'Low',
-    activeClass: 'bg-slate-800 text-slate-200 border-slate-600',
-    iconClass: 'text-slate-400',
-  },
-];
+const SEVERITY_OPTIONS = SEVERITY_ORDER.map((level) => {
+  const style = getSeverityStyle(level);
+  return {
+    level,
+    activeClass: style.filterActiveClass,
+    iconClass: style.textClass,
+  };
+});
 
 function getSeverityCount(summary: ScanSummary, level: Severity): number {
   switch (level) {

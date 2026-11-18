@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
 import { AlertOctagon, AlertTriangle, Info, PieChart as PieChartIcon, ShieldAlert } from 'lucide-react';
+import { SEVERITY_ORDER, getSeverityStyle } from '@/lib/severityStyles';
 import type { ScanSummary, Severity } from '@/scanner/types';
 
 interface SeverityPieChartProps {
@@ -19,16 +20,14 @@ interface SeveritySlice {
   textClass: string;
 }
 
-const SEVERITY_CONFIG: Array<{
-  level: Severity;
-  color: string;
-  textClass: string;
-}> = [
-  { level: 'Critical', color: '#EF4444', textClass: 'text-red-400' },
-  { level: 'High', color: '#F59E0B', textClass: 'text-amber-400' },
-  { level: 'Medium', color: '#38BDF8', textClass: 'text-sky-400' },
-  { level: 'Low', color: '#94A3B8', textClass: 'text-slate-400' },
-];
+const SEVERITY_CONFIG = SEVERITY_ORDER.map((level) => {
+  const style = getSeverityStyle(level);
+  return {
+    level,
+    color: style.hex,
+    textClass: style.textClass,
+  };
+});
 
 function getCount(summary: ScanSummary, level: Severity): number {
   switch (level) {

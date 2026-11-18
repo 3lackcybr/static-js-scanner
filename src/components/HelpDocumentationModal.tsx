@@ -138,8 +138,8 @@ export default function HelpDocumentationModal({
                       <span
                         className={`text-[10px] font-mono px-1.5 py-0.5 rounded border ${
                           entry.severity === 'Critical'
-                            ? 'text-red-300 border-red-500/40 bg-red-950/30'
-                            : 'text-amber-300 border-amber-500/40 bg-amber-950/30'
+                            ? 'text-purple-200 border-purple-500/50 bg-purple-950/60'
+                            : 'text-red-300 border-red-500/50 bg-red-950/50'
                         }`}
                       >
                         {entry.severity}

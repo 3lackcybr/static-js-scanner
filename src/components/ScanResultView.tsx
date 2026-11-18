@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { motion } from 'motion/react';
 import {
   AlertOctagon,
@@ -11,79 +11,58 @@ import {
   ExternalLink,
   FileDown,
   Info,
-  Search,
+  RotateCcw,
   ShieldAlert,
 } from 'lucide-react';
 import { exportReportAsJson, exportReportAsPdf } from '@/lib/reportExporter';
-import type { ScanResult, Severity } from '@/scanner/types';
+import { getSeverityStyle } from '@/lib/severityStyles';
+import type { ScanResult, Severity, Vulnerability } from '@/scanner/types';
 import SeverityFilter from './SeverityFilter';
 import SeverityPieChart from './SeverityPieChart';
 
 interface ScanResultViewProps {
   result: ScanResult;
+  filteredVulnerabilities: Vulnerability[];
+  selectedSeverities: Severity[];
+  searchQuery: string;
+  onToggleSeverity: (severity: Severity) => void;
+  onSelectAllSeverities: () => void;
+  onResetFilters: () => void;
   onReset: () => void;
 }
 
-function SeverityIndicator({ severity }: { severity: Severity }) {
-  if (severity === 'Critical') {
-    return (
-      <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-red-400 whitespace-nowrap shrink-0">
-        <AlertOctagon className="w-3.5 h-3.5" aria-hidden="true" />
-        <span>Critical</span>
-      </span>
-    );
-  }
-  if (severity === 'High') {
-    return (
-      <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-400 whitespace-nowrap shrink-0">
-        <AlertTriangle className="w-3.5 h-3.5" aria-hidden="true" />
-        <span>High</span>
-      </span>
-    );
-  }
-  if (severity === 'Medium') {
-    return (
-      <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-sky-400 whitespace-nowrap shrink-0">
-        <ShieldAlert className="w-3.5 h-3.5" aria-hidden="true" />
-        <span>Medium</span>
-      </span>
-    );
-  }
+function SeverityIcon({ severity, className }: { severity: Severity; className: string }) {
+  if (severity === 'Critical') return <AlertOctagon className={className} aria-hidden="true" />;
+  if (severity === 'High') return <AlertTriangle className={className} aria-hidden="true" />;
+  if (severity === 'Medium') return <ShieldAlert className={className} aria-hidden="true" />;
+  return <Info className={className} aria-hidden="true" />;
+}
+
+function SeverityBadge({ severity }: { severity: Severity }) {
+  const style = getSeverityStyle(severity);
   return (
-    <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-400 whitespace-nowrap shrink-0">
-      <Info className="w-3.5 h-3.5" aria-hidden="true" />
-      <span>Low</span>
+    <span
+      data-testid={`severity-badge-${severity.toLowerCase()}`}
+      className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded border text-[11px] font-semibold uppercase tracking-wider whitespace-nowrap shrink-0 ${style.badgeClass}`}
+    >
+      <SeverityIcon severity={severity} className="w-3.5 h-3.5 shrink-0" />
+      <span>{style.label}</span>
     </span>
   );
 }
 
-export default function ScanResultView({ result, onReset }: ScanResultViewProps) {
-  const [selectedSeverities, setSelectedSeverities] = useState<Severity[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
+export default function ScanResultView({
+  result,
+  filteredVulnerabilities,
+  selectedSeverities,
+  searchQuery,
+  onToggleSeverity,
+  onSelectAllSeverities,
+  onResetFilters,
+  onReset,
+}: ScanResultViewProps) {
   const [exportingPdf, setExportingPdf] = useState(false);
-
-  const handleToggleSeverity = (level: Severity) => {
-    setSelectedSeverities((prev) =>
-      prev.includes(level) ? prev.filter((item) => item !== level) : [...prev, level]
-    );
-  };
-
-  const filteredVulnerabilities = useMemo(() => {
-    const q = searchQuery.trim().toLowerCase();
-    return result.vulnerabilities.filter((v) => {
-      if (selectedSeverities.length > 0 && !selectedSeverities.includes(v.severity)) {
-        return false;
-      }
-      if (!q) return true;
-      return (
-        v.type.toLowerCase().includes(q) ||
-        v.cweId.toLowerCase().includes(q) ||
-        v.snippet.toLowerCase().includes(q) ||
-        v.description.toLowerCase().includes(q) ||
-        String(v.line).includes(q)
-      );
-    });
-  }, [result.vulnerabilities, selectedSeverities, searchQuery]);
+  const hasActiveFilter = selectedSeverities.length > 0 || searchQuery.trim().length > 0;
 
   const handleDownloadJson = () => {
     exportReportAsJson(result);
@@ -164,13 +143,13 @@ export default function ScanResultView({ result, onReset }: ScanResultViewProps)
           </div>
           <div className="py-1 md:py-2 md:px-6">
             <div className="text-xs text-slate-400">Critical Severity</div>
-            <div className="mt-1 text-2xl font-semibold font-mono tabular-nums text-red-400">
+            <div className="mt-1 text-2xl font-semibold font-mono tabular-nums text-purple-400">
               {result.summary.critical}
             </div>
           </div>
           <div className="py-1 md:py-2 md:px-6">
             <div className="text-xs text-slate-400">High Severity</div>
-            <div className="mt-1 text-2xl font-semibold font-mono tabular-nums text-amber-400">
+            <div className="mt-1 text-2xl font-semibold font-mono tabular-nums text-red-400">
               {result.summary.high}
             </div>
           </div>
@@ -226,32 +205,28 @@ export default function ScanResultView({ result, onReset }: ScanResultViewProps)
           <SeverityPieChart
             summary={result.summary}
             selectedSeverities={selectedSeverities}
-            onToggleSeverity={handleToggleSeverity}
+            onToggleSeverity={onToggleSeverity}
           />
 
-          {/* Filter & Search Toolbar */}
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+          {/* Severity Filter Toolbar */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <SeverityFilter
               summary={result.summary}
               selectedSeverities={selectedSeverities}
-              onToggleSeverity={handleToggleSeverity}
-              onSelectAll={() => setSelectedSeverities([])}
+              onToggleSeverity={onToggleSeverity}
+              onSelectAll={onSelectAllSeverities}
             />
 
-            <div className="relative lg:w-72">
-              <Search
-                className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
-                aria-hidden="true"
-              />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Filter by CWE, line, or snippet..."
-                aria-label="Filter findings"
-                className="w-full pl-9 pr-3 py-2 text-xs bg-[#111622] border border-slate-800 rounded-md text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-[#C8A253]/70"
-              />
-            </div>
+            {hasActiveFilter && (
+              <button
+                type="button"
+                onClick={onResetFilters}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-[#E6C77E] bg-[#111622] border border-slate-800 rounded-md hover:border-[#C8A253]/50 transition-colors self-start sm:self-auto cursor-pointer"
+              >
+                <RotateCcw className="w-3.5 h-3.5" aria-hidden="true" />
+                <span>Reset filters</span>
+              </button>
+            )}
           </div>
 
           {/* Filtered Findings List */}
@@ -260,10 +235,7 @@ export default function ScanResultView({ result, onReset }: ScanResultViewProps)
               <p className="text-sm text-slate-300">No findings match the current filter.</p>
               <button
                 type="button"
-                onClick={() => {
-                  setSelectedSeverities([]);
-                  setSearchQuery('');
-                }}
+                onClick={onResetFilters}
                 className="text-xs font-medium text-[#E6C77E] hover:underline cursor-pointer"
               >
                 Reset filters
@@ -271,21 +243,20 @@ export default function ScanResultView({ result, onReset }: ScanResultViewProps)
             </div>
           ) : (
             <div className="space-y-4">
-              {filteredVulnerabilities.map((vuln) => (
-                <article
-                  key={vuln.id}
-                  className="bg-[#111622] border border-slate-800 rounded-lg overflow-hidden"
-                >
-                  <div className="px-6 py-4 border-b border-slate-800/80 flex flex-wrap items-center justify-between gap-3">
-                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                      <SeverityIndicator severity={vuln.severity} />
-                      <span className="text-slate-600" aria-hidden="true">
-                        &middot;
-                      </span>
-                      <h3 className="text-sm font-semibold text-slate-100">{vuln.type}</h3>
-                      <span className="text-slate-600" aria-hidden="true">
-                        &middot;
-                      </span>
+              {filteredVulnerabilities.map((vuln) => {
+                const severityStyle = getSeverityStyle(vuln.severity);
+                return (
+                  <article
+                    key={vuln.id}
+                    className={`bg-[#111622] border border-slate-800 border-l-[3px] ${severityStyle.cardAccentClass} rounded-lg overflow-hidden`}
+                  >
+                    <div className="px-6 py-4 border-b border-slate-800/80 flex flex-wrap items-center justify-between gap-3">
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+                        <SeverityBadge severity={vuln.severity} />
+                        <h3 className="text-sm font-semibold text-slate-100">{vuln.type}</h3>
+                        <span className="text-slate-600" aria-hidden="true">
+                          &middot;
+                        </span>
                       <a
                         href={vuln.cweUrl}
                         target="_blank"
@@ -324,9 +295,10 @@ export default function ScanResultView({ result, onReset }: ScanResultViewProps)
                         <p className="text-slate-300 text-[13px]">{vuln.remediation}</p>
                       </div>
                     </div>
-                  </div>
-                </article>
-              ))}
+                    </div>
+                  </article>
+                );
+              })}
             </div>
           )}
         </>
