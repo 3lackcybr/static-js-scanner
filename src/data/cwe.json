@@ -1,0 +1,47 @@
+{
+  "CWE-89": {
+    "id": "CWE-89",
+    "name": "SQL Injection",
+    "officialName": "Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection')",
+    "severity": "Critical",
+    "description": "Constructing SQL queries via string concatenation, template literal interpolation, or unparameterized input allows attackers to manipulate query logic, exfiltrate data, or modify database records.",
+    "remediation": "Use parameterized queries or prepared statements (e.g., `db.query('SELECT * FROM users WHERE id = ?', [userId])`) or a query builder/ORM with bound parameters instead of concatenating user input.",
+    "url": "https://cwe.mitre.org/data/definitions/89.html"
+  },
+  "CWE-79": {
+    "id": "CWE-79",
+    "name": "Cross-Site Scripting (XSS)",
+    "officialName": "Improper Neutralization of Input During Web Page Generation ('Cross-site Scripting')",
+    "severity": "High",
+    "description": "Writing untrusted or dynamic data into dangerous DOM sinks such as innerHTML, outerHTML, document.write(), or jQuery .html() without sanitization enables arbitrary script execution in users' browsers.",
+    "remediation": "Use safe DOM APIs such as `textContent` or `innerText` instead of `innerHTML`/`document.write()`. When HTML rendering is required, sanitize with a vetted library like DOMPurify.",
+    "url": "https://cwe.mitre.org/data/definitions/79.html"
+  },
+  "CWE-78": {
+    "id": "CWE-78",
+    "name": "Command Injection",
+    "officialName": "Improper Neutralization of Special Elements used in an OS Command ('OS Command Injection')",
+    "severity": "Critical",
+    "description": "Passing unvalidated or dynamically constructed strings into OS command execution functions (such as child_process.exec or spawn with shell: true) allows attackers to execute arbitrary system commands.",
+    "remediation": "Avoid shell invocation when possible. Use `execFile` or `spawn` with an explicit argument array and `shell: false`, and strictly validate or allowlist any user-controlled parameters.",
+    "url": "https://cwe.mitre.org/data/definitions/78.html"
+  },
+  "CWE-798": {
+    "id": "CWE-798",
+    "name": "Hardcoded Secrets",
+    "officialName": "Use of Hard-coded Credentials",
+    "severity": "High",
+    "description": "Embedding API keys, passwords, tokens, private keys, or database credentials directly in client-side or server-side JavaScript exposes sensitive secrets to anyone who can inspect the source code.",
+    "remediation": "Remove secrets from source code immediately, rotate exposed credentials, and load sensitive values from environment variables or a dedicated secrets manager on the server side.",
+    "url": "https://cwe.mitre.org/data/definitions/798.html"
+  },
+  "CWE-95": {
+    "id": "CWE-95",
+    "name": "Insecure eval()",
+    "officialName": "Improper Neutralization of Directives in Dynamically Evaluated Code ('Eval Injection')",
+    "severity": "High",
+    "description": "Using `eval()`, `new Function()`, or string-based `setTimeout()`/`setInterval()` evaluates strings as executable JavaScript, creating severe code injection and XSS risks if any dynamic input reaches it.",
+    "remediation": "Replace `eval()` with safe alternatives such as `JSON.parse()` for data parsing, function maps for dynamic dispatch, and pass callback functions rather than code strings to `setTimeout()`/`setInterval()`.",
+    "url": "https://cwe.mitre.org/data/definitions/95.html"
+  }
+}

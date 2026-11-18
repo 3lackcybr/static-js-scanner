@@ -1,0 +1,5 @@
+{
+  "name": "Static JavaScript Vulnerability Scanner",
+  "description": "A lightweight, web-based static analysis tool that scans JavaScript, HTML, and PHP source code for SQL Injection, XSS, Command Injection, Hardcoded Secrets, and Insecure eval() usage with CWE mapping.",
+  "requestFramePermissions": []
+}
